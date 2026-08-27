@@ -2,7 +2,7 @@
 
 ## Desenvolvedor
 
-**Nome:** Geovana Vitoria da Silva
+**Nome:** Cauã de Souza Lopes
 **Turma:** 2º Ano TEC — Desenvolvimento de Sistemas  
 **Instituição:** SENAI  
 **Ano:** 2026
