@@ -1,0 +1,2180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+<title>Guerras Nas Estrelas — Boss Rush</title>
+
+<style>
+:root{
+  --bg:#030612;
+  --cyan:#36e0ff;
+  --blue:#2979ff;
+  --red:#ff3b6b;
+  --purple:#9b5cff;
+  --yellow:#ffd166;
+  --green:#63e6be;
+  --white:#f5f7ff;
+}
+
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+html,body{
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:var(--bg);
+  color:var(--white);
+  font-family:monospace;
+  touch-action:none;
+}
+
+canvas{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+}
+
+#hud{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  padding:15px;
+  z-index:5;
+}
+
+.top{
+  display:flex;
+  justify-content:space-between;
+}
+
+.label{
+  font-size:10px;
+  letter-spacing:.2em;
+  opacity:.55;
+  text-transform:uppercase;
+}
+
+.value{
+  font-size:25px;
+  font-weight:bold;
+  margin-top:4px;
+}
+
+#scoreValue{
+  color:var(--cyan);
+  text-shadow:0 0 15px var(--cyan);
+}
+
+#waveValue{
+  color:var(--yellow);
+  text-shadow:0 0 15px var(--yellow);
+  text-align:right;
+}
+
+#bossHud{
+  position:absolute;
+  top:15px;
+  left:50%;
+  transform:translateX(-50%);
+  width:min(500px,70vw);
+  text-align:center;
+}
+
+#bossName{
+  font-size:13px;
+  font-weight:bold;
+  letter-spacing:.18em;
+  margin-bottom:5px;
+  text-shadow:0 0 12px currentColor;
+}
+
+.bossBar{
+  width:100%;
+  height:16px;
+  background:#05050a;
+  border:2px solid var(--purple);
+  border-radius:5px;
+  overflow:hidden;
+}
+
+#bossFill{
+  height:100%;
+  width:100%;
+  transform-origin:left;
+  background:linear-gradient(90deg,var(--purple),var(--red));
+}
+
+.bottom{
+  position:absolute;
+  left:15px;
+  bottom:18px;
+  width:min(300px,60vw);
+}
+
+.barLabel{
+  font-size:9px;
+  letter-spacing:.2em;
+  opacity:.5;
+  margin-bottom:5px;
+}
+
+.bar{
+  width:100%;
+  height:10px;
+  background:rgba(255,255,255,.1);
+  border-radius:10px;
+  overflow:hidden;
+  margin-bottom:10px;
+}
+
+#hpFill{
+  width:100%;
+  height:100%;
+  background:linear-gradient(90deg,#63e6be,#22c55e);
+  transform-origin:left;
+}
+
+#dashFill{
+  width:100%;
+  height:100%;
+  background:linear-gradient(90deg,#36e0ff,#7c3aed);
+  transform-origin:left;
+}
+
+#message{
+  position:fixed;
+  top:55%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  color:white;
+  font-size:25px;
+  font-weight:bold;
+  letter-spacing:.15em;
+  text-align:center;
+  pointer-events:none;
+  opacity:0;
+  z-index:8;
+  text-shadow:0 0 20px currentColor;
+}
+
+#screen{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:radial-gradient(
+    circle at center,
+    rgba(35,25,90,.8),
+    rgba(2,4,12,.97)
+  );
+  z-index:20;
+}
+
+#screen.hidden{
+  display:none;
+}
+
+.panel{
+  width:min(600px,90vw);
+  text-align:center;
+}
+
+h1{
+  font-size:clamp(35px,8vw,70px);
+  line-height:.95;
+  letter-spacing:.08em;
+  color:white;
+  text-shadow:
+    0 0 8px var(--cyan),
+    0 0 35px var(--blue),
+    0 0 70px var(--purple);
+}
+
+h1 span{
+  color:var(--cyan);
+}
+
+.subtitle{
+  margin-top:15px;
+  font-size:12px;
+  letter-spacing:.2em;
+  opacity:.6;
+}
+
+.instructions{
+  margin:28px auto;
+  max-width:350px;
+  display:grid;
+  gap:9px;
+  font-size:12px;
+  opacity:.8;
+}
+
+.instructions div{
+  display:flex;
+  justify-content:space-between;
+  border-bottom:1px dashed rgba(255,255,255,.15);
+  padding-bottom:7px;
+}
+
+.instructions b{
+  color:var(--cyan);
+}
+
+button{
+  border:0;
+  padding:16px 30px;
+  background:var(--cyan);
+  color:#02050c;
+  font-family:monospace;
+  font-weight:bold;
+  letter-spacing:.15em;
+  cursor:pointer;
+  box-shadow:0 0 25px rgba(54,224,255,.6);
+}
+
+button:hover{
+  transform:translateY(-2px);
+  box-shadow:0 0 40px rgba(54,224,255,.9);
+}
+
+.result{
+  margin:20px 0;
+  line-height:1.8;
+  opacity:.8;
+}
+
+.result strong{
+  display:block;
+  font-size:45px;
+  color:var(--yellow);
+}
+
+@media(max-width:600px){
+  #bossHud{
+    width:75vw;
+  }
+
+  .bottom{
+    width:45vw;
+  }
+
+  .instructions{
+    margin:20px auto;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="hud">
+
+  <div class="top">
+
+    <div>
+      <div class="label">Pontuação</div>
+      <div class="value" id="scoreValue">0</div>
+    </div>
+
+    <div>
+      <div class="label">Chefão</div>
+      <div class="value" id="waveValue">1 / 3</div>
+    </div>
+
+  </div>
+
+  <div id="bossHud">
+    <div id="bossName">---</div>
+    <div class="bossBar">
+      <div id="bossFill"></div>
+    </div>
+  </div>
+
+  <div class="bottom">
+
+    <div class="barLabel">CASCO</div>
+    <div class="bar">
+      <div id="hpFill"></div>
+    </div>
+
+    <div class="barLabel">IMPULSO</div>
+    <div class="bar">
+      <div id="dashFill"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<div id="message"></div>
+
+<div id="screen">
+
+  <div class="panel" id="panel">
+
+    <h1>GUERRAS<br><span>NAS ESTRELAS</span></h1>
+
+    <div class="subtitle">
+      BOSS RUSH · SENAI
+    </div>
+
+    <div class="instructions">
+
+      <div>
+        <span>Mover</span>
+        <b>W A S D / SETAS</b>
+      </div>
+
+      <div>
+        <span>Mirar</span>
+        <b>MOUSE</b>
+      </div>
+
+      <div>
+        <span>Atirar</span>
+        <b>AUTOMÁTICO</b>
+      </div>
+
+      <div>
+        <span>Impulso</span>
+        <b>ESPAÇO</b>
+      </div>
+
+      <div>
+        <span>Pausar</span>
+        <b>P</b>
+      </div>
+
+      <div>
+        <span>Celular</span>
+        <b>ARRASTE</b>
+      </div>
+
+    </div>
+
+    <button id="startButton">
+      INICIAR BATALHA
+    </button>
+
+  </div>
+
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================
+   CANVAS
+========================================================= */
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let W = 0;
+let H = 0;
+let DPR = 1;
+
+function resize(){
+
+  DPR = Math.min(window.devicePixelRatio || 1,2);
+
+  W = window.innerWidth;
+  H = window.innerHeight;
+
+  canvas.width = W * DPR;
+  canvas.height = H * DPR;
+
+  canvas.style.width = W + "px";
+  canvas.style.height = H + "px";
+
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+
+window.addEventListener("resize",resize);
+resize();
+
+
+/* =========================================================
+   UTILIDADES
+========================================================= */
+
+const TAU = Math.PI * 2;
+
+function rand(a,b){
+  return a + Math.random() * (b-a);
+}
+
+function clamp(v,a,b){
+  return Math.max(a,Math.min(b,v));
+}
+
+function distance(a,b){
+  return Math.hypot(a.x-b.x,a.y-b.y);
+}
+
+
+/* =========================================================
+   ÁUDIO
+========================================================= */
+
+let audio = null;
+
+function enableAudio(){
+
+  if(!audio){
+    audio = new (window.AudioContext ||
+                 window.webkitAudioContext)();
+  }
+
+  if(audio.state === "suspended"){
+    audio.resume();
+  }
+}
+
+function sound(freq,duration=.08,type="square",volume=.035){
+
+  if(!audio) return;
+
+  const osc = audio.createOscillator();
+  const gain = audio.createGain();
+
+  const now = audio.currentTime;
+
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq,now);
+
+  gain.gain.setValueAtTime(volume,now);
+  gain.gain.exponentialRampToValueAtTime(
+    .0001,
+    now + duration
+  );
+
+  osc.connect(gain);
+  gain.connect(audio.destination);
+
+  osc.start(now);
+  osc.stop(now + duration);
+}
+
+
+/* =========================================================
+   INPUT
+========================================================= */
+
+const keys = {};
+
+window.addEventListener("keydown",e=>{
+
+  keys[e.code] = true;
+
+  if([
+    "Space",
+    "ArrowUp",
+    "ArrowDown",
+    "ArrowLeft",
+    "ArrowRight"
+  ].includes(e.code)){
+    e.preventDefault();
+  }
+
+  if(e.code === "KeyP" && game.state === "playing"){
+    game.paused = !game.paused;
+  }
+
+  if(e.code === "Enter" && game.state !== "playing"){
+    startGame();
+  }
+
+});
+
+window.addEventListener("keyup",e=>{
+  keys[e.code] = false;
+});
+
+
+const mouse = {
+  x:0,
+  y:0,
+  active:false
+};
+
+window.addEventListener("mousemove",e=>{
+
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+  mouse.active = true;
+
+});
+
+
+/* =========================================================
+   TOUCH
+========================================================= */
+
+const touch = {
+  active:false,
+  startX:0,
+  startY:0,
+  x:0,
+  y:0
+};
+
+canvas.addEventListener("touchstart",e=>{
+
+  e.preventDefault();
+
+  enableAudio();
+
+  const t = e.touches[0];
+
+  touch.active = true;
+  touch.startX = t.clientX;
+  touch.startY = t.clientY;
+  touch.x = t.clientX;
+  touch.y = t.clientY;
+
+},{passive:false});
+
+
+canvas.addEventListener("touchmove",e=>{
+
+  e.preventDefault();
+
+  if(!touch.active) return;
+
+  const t = e.touches[0];
+
+  touch.x = t.clientX;
+  touch.y = t.clientY;
+
+},{passive:false});
+
+
+canvas.addEventListener("touchend",e=>{
+
+  e.preventDefault();
+
+  touch.active = false;
+
+},{passive:false});
+
+
+/* =========================================================
+   GAME
+========================================================= */
+
+const game = {
+
+  state:"menu",
+
+  paused:false,
+
+  score:0,
+
+  bossIndex:0,
+
+  shake:0,
+
+  time:0,
+
+  transition:false
+
+};
+
+let player;
+let boss;
+
+let bullets = [];
+let enemyBullets = [];
+let particles = [];
+let texts = [];
+
+
+/* =========================================================
+   CHEFÕES
+========================================================= */
+
+const BOSSES = [
+
+  {
+    name:"FAUCE DE ÉBANO",
+    hp:700,
+    color:"#a8a8a8",
+    speed:150,
+    cooldown:.9,
+    attack:"aim"
+  },
+
+  {
+    name:"DR. DESTINO",
+    hp:1200,
+    color:"#63e6be",
+    speed:190,
+    cooldown:.75,
+    attack:"spread"
+  },
+
+  {
+    name:"THANOS",
+    hp:1800,
+    color:"#9b5cff",
+    speed:220,
+    cooldown:.58,
+    attack:"ring"
+  }
+
+];
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+function resetGame(){
+
+  player = {
+
+    x:W/2,
+    y:H*.78,
+
+    vx:0,
+    vy:0,
+
+    radius:14,
+
+    hp:200,
+    maxHp:200,
+
+    speed:340,
+
+    angle:-Math.PI/2,
+
+    fireTimer:0,
+    fireRate:.11,
+
+    dashTimer:0,
+    dashCooldown:0,
+
+    invulnerable:0
+
+  };
+
+  bullets = [];
+  enemyBullets = [];
+  particles = [];
+  texts = [];
+
+  game.score = 0;
+  game.bossIndex = 0;
+  game.time = 0;
+  game.shake = 0;
+  game.paused = false;
+  game.transition = false;
+
+  createBoss();
+
+}
+
+
+/* =========================================================
+   CRIAR CHEFÃO
+========================================================= */
+
+function createBoss(){
+
+  const data = BOSSES[game.bossIndex];
+
+  boss = {
+
+    x:W/2,
+
+    y:-100,
+
+    radius:55 + game.bossIndex*7,
+
+    hp:data.hp,
+
+    maxHp:data.hp,
+
+    color:data.color,
+
+    name:data.name,
+
+    speed:data.speed,
+
+    cooldown:data.cooldown,
+
+    attack:data.attack,
+
+    attackTimer:1.5,
+
+    entering:true,
+
+    angle:0,
+
+    hitFlash:0
+
+  };
+
+  updateBossHud();
+
+  showMessage(
+    "CHEFÃO " + (game.bossIndex+1) +
+    "<br>" + data.name,
+    data.color
+  );
+
+  game.shake = 15;
+
+}
+
+
+/* =========================================================
+   MENSAGEM
+========================================================= */
+
+let messageTimer = 0;
+
+function showMessage(text,color="#fff"){
+
+  const el = document.getElementById("message");
+
+  el.innerHTML = text;
+  el.style.color = color;
+  el.style.opacity = "1";
+
+  messageTimer = 2;
+
+}
+
+
+/* =========================================================
+   TIRO DO JOGADOR
+========================================================= */
+
+function shoot(){
+
+  const speed = 850;
+
+  bullets.push({
+
+    x:player.x + Math.cos(player.angle)*18,
+
+    y:player.y + Math.sin(player.angle)*18,
+
+    vx:Math.cos(player.angle)*speed,
+
+    vy:Math.sin(player.angle)*speed,
+
+    radius:4,
+
+    life:1.2
+
+  });
+
+  sound(720,.035,"square",.025);
+
+}
+
+
+/* =========================================================
+   EXPLOSÃO
+========================================================= */
+
+function explosion(x,y,color,count=20,power=250){
+
+  for(let i=0;i<count;i++){
+
+    const angle = rand(0,TAU);
+    const speed = rand(power*.2,power);
+
+    particles.push({
+
+      x,
+      y,
+
+      vx:Math.cos(angle)*speed,
+      vy:Math.sin(angle)*speed,
+
+      radius:rand(1,4),
+
+      life:rand(.3,.8),
+
+      maxLife:.8,
+
+      color
+
+    });
+
+  }
+
+}
+
+
+/* =========================================================
+   TEXTO
+========================================================= */
+
+function floatingText(x,y,text,color){
+
+  texts.push({
+
+    x,
+    y,
+    text,
+    color,
+    life:1
+
+  });
+
+}
+
+
+/* =========================================================
+   DANO NO JOGADOR
+========================================================= */
+
+function damagePlayer(amount){
+
+  if(player.invulnerable > 0) return;
+
+  player.hp -= amount;
+
+  player.invulnerable = .8;
+
+  game.shake = 12;
+
+  explosion(
+    player.x,
+    player.y,
+    "#ff3b6b",
+    20,
+    280
+  );
+
+  sound(110,.2,"sawtooth",.07);
+
+  if(player.hp <= 0){
+
+    player.hp = 0;
+
+    gameOver();
+
+  }
+
+}
+
+
+/* =========================================================
+   ATAQUES DOS CHEFÕES
+========================================================= */
+
+function bossAttack(){
+
+  if(!boss) return;
+
+  if(boss.attack === "aim"){
+
+    const angle = Math.atan2(
+      player.y-boss.y,
+      player.x-boss.x
+    );
+
+    enemyBullets.push({
+
+      x:boss.x,
+      y:boss.y+boss.radius,
+
+      vx:Math.cos(angle)*400,
+      vy:Math.sin(angle)*400,
+
+      radius:7,
+      life:4,
+      color:"#ffffff"
+
+    });
+
+  }
+
+
+  if(boss.attack === "spread"){
+
+    const base = Math.atan2(
+      player.y-boss.y,
+      player.x-boss.x
+    );
+
+    for(let i=-2;i<=2;i++){
+
+      const angle = base + i*.18;
+
+      enemyBullets.push({
+
+        x:boss.x,
+        y:boss.y+boss.radius*.5,
+
+        vx:Math.cos(angle)*390,
+        vy:Math.sin(angle)*390,
+
+        radius:7,
+        life:4,
+        color:"#63e6be"
+
+      });
+
+    }
+
+  }
+
+
+  if(boss.attack === "ring"){
+
+    const amount = 14;
+
+    for(let i=0;i<amount;i++){
+
+      const angle =
+        i/amount*TAU + game.time*.25;
+
+      enemyBullets.push({
+
+        x:boss.x,
+        y:boss.y,
+
+        vx:Math.cos(angle)*300,
+        vy:Math.sin(angle)*300,
+
+        radius:7,
+
+        life:4,
+
+        color:"#ffd166"
+
+      });
+
+    }
+
+  }
+
+  sound(140,.12,"sawtooth",.05);
+
+}
+
+
+/* =========================================================
+   UPDATE DO JOGADOR
+========================================================= */
+
+function updatePlayer(dt){
+
+  let mx =
+    (keys.KeyD || keys.ArrowRight ? 1:0) -
+    (keys.KeyA || keys.ArrowLeft ? 1:0);
+
+  let my =
+    (keys.KeyS || keys.ArrowDown ? 1:0) -
+    (keys.KeyW || keys.ArrowUp ? 1:0);
+
+
+  if(touch.active){
+
+    const dx = touch.x-touch.startX;
+    const dy = touch.y-touch.startY;
+
+    const length = Math.hypot(dx,dy);
+
+    if(length > 8){
+
+      mx = dx/Math.max(length,60);
+      my = dy/Math.max(length,60);
+
+      mx = clamp(mx,-1,1);
+      my = clamp(my,-1,1);
+
+    }else{
+
+      mx = 0;
+      my = 0;
+
+    }
+
+  }
+
+
+  const length = Math.hypot(mx,my);
+
+  if(length > 1){
+
+    mx /= length;
+    my /= length;
+
+  }
+
+
+  const speed =
+    player.dashTimer > 0
+      ? player.speed*4
+      : player.speed;
+
+
+  player.vx +=
+    (mx*speed-player.vx) *
+    Math.min(1,dt*12);
+
+  player.vy +=
+    (my*speed-player.vy) *
+    Math.min(1,dt*12);
+
+
+  player.x += player.vx*dt;
+  player.y += player.vy*dt;
+
+
+  player.x = clamp(
+    player.x,
+    player.radius,
+    W-player.radius
+  );
+
+  player.y = clamp(
+    player.y,
+    player.radius,
+    H-player.radius
+  );
+
+
+  /* Mira */
+
+  if(mouse.active && !touch.active){
+
+    player.angle = Math.atan2(
+      mouse.y-player.y,
+      mouse.x-player.x
+    );
+
+  }else if(boss){
+
+    player.angle = Math.atan2(
+      boss.y-player.y,
+      boss.x-player.x
+    );
+
+  }
+
+
+  /* Dash */
+
+  player.dashCooldown =
+    Math.max(0,player.dashCooldown-dt);
+
+  player.dashTimer =
+    Math.max(0,player.dashTimer-dt);
+
+  player.invulnerable =
+    Math.max(0,player.invulnerable-dt);
+
+
+  if(
+    keys.Space &&
+    player.dashCooldown <= 0 &&
+    length > .1
+  ){
+
+    player.dashTimer = .18;
+    player.dashCooldown = 1;
+
+    player.vx += mx*500;
+    player.vy += my*500;
+
+    explosion(
+      player.x,
+      player.y,
+      "#36e0ff",
+      18,
+      180
+    );
+
+    sound(420,.12,"sine",.06);
+
+    keys.Space = false;
+
+  }
+
+
+  /* Tiro automático */
+
+  player.fireTimer -= dt;
+
+  if(player.fireTimer <= 0){
+
+    shoot();
+
+    player.fireTimer =
+      player.fireRate;
+
+  }
+
+}
+
+
+/* =========================================================
+   UPDATE DO CHEFÃO
+========================================================= */
+
+function updateBoss(dt){
+
+  if(!boss) return;
+
+
+  /* Entrada */
+
+  if(boss.entering){
+
+    boss.y += 140*dt;
+
+    if(boss.y >= H*.22){
+
+      boss.y = H*.22;
+      boss.entering = false;
+
+    }
+
+    return;
+
+  }
+
+
+  /* Movimento */
+
+  boss.x =
+    W/2 +
+    Math.sin(game.time*(1.1+game.bossIndex*.35))
+    * W*.34;
+
+
+  boss.angle =
+    Math.atan2(
+      player.y-boss.y,
+      player.x-boss.x
+    );
+
+
+  /* Ataque */
+
+  boss.attackTimer -= dt;
+
+  if(boss.attackTimer <= 0){
+
+    bossAttack();
+
+    boss.attackTimer = boss.cooldown;
+
+  }
+
+
+  /* Contato com jogador */
+
+  if(
+    distance(player,boss) <
+    player.radius+boss.radius
+  ){
+
+    damagePlayer(30);
+
+  }
+
+
+  boss.hitFlash =
+    Math.max(0,boss.hitFlash-dt);
+
+}
+
+
+/* =========================================================
+   UPDATE DOS TIROS
+========================================================= */
+
+function updateBullets(dt){
+
+  for(let i=bullets.length-1;i>=0;i--){
+
+    const b = bullets[i];
+
+    b.x += b.vx*dt;
+    b.y += b.vy*dt;
+
+    b.life -= dt;
+
+
+    if(
+      b.life <= 0 ||
+      b.x < -50 ||
+      b.x > W+50 ||
+      b.y < -50 ||
+      b.y > H+50
+    ){
+
+      bullets.splice(i,1);
+      continue;
+
+    }
+
+
+    if(
+      boss &&
+      !boss.entering &&
+      distance(b,boss) <
+      b.radius+boss.radius
+    ){
+
+      boss.hp -= 5;
+
+      boss.hitFlash = .08;
+
+      explosion(
+        b.x,
+        b.y,
+        boss.color,
+        4,
+        120
+      );
+
+      bullets.splice(i,1);
+
+      if(boss.hp <= 0){
+
+        defeatBoss();
+
+      }
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   TIROS DOS CHEFÕES
+========================================================= */
+
+function updateEnemyBullets(dt){
+
+  for(let i=enemyBullets.length-1;i>=0;i--){
+
+    const b = enemyBullets[i];
+
+    b.x += b.vx*dt;
+    b.y += b.vy*dt;
+
+    b.life -= dt;
+
+
+    if(
+      b.life <= 0 ||
+      b.x < -80 ||
+      b.x > W+80 ||
+      b.y < -80 ||
+      b.y > H+80
+    ){
+
+      enemyBullets.splice(i,1);
+      continue;
+
+    }
+
+
+    if(
+      distance(b,player) <
+      b.radius+player.radius
+    ){
+
+      damagePlayer(20);
+
+      enemyBullets.splice(i,1);
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   DERROTAR CHEFÃO
+========================================================= */
+
+function defeatBoss(){
+
+  if(game.transition) return;
+
+  game.transition = true;
+
+  const defeated = boss;
+
+  explosion(
+    defeated.x,
+    defeated.y,
+    defeated.color,
+    120,
+    650
+  );
+
+  game.shake = 25;
+
+  sound(70,.7,"sawtooth",.15);
+
+  game.score +=
+    (game.bossIndex+1)*1000;
+
+
+  boss = null;
+
+  enemyBullets = [];
+
+
+  if(game.bossIndex < BOSSES.length-1){
+
+    game.bossIndex++;
+
+    showMessage(
+      "CHEFÃO DERROTADO!",
+      "#63e6be"
+    );
+
+    setTimeout(()=>{
+
+      game.transition = false;
+
+      createBoss();
+
+    },1500);
+
+  }else{
+
+    setTimeout(victory,1200);
+
+  }
+
+}
+
+
+/* =========================================================
+   PARTÍCULAS
+========================================================= */
+
+function updateParticles(dt){
+
+  for(let i=particles.length-1;i>=0;i--){
+
+    const p = particles[i];
+
+    p.x += p.vx*dt;
+    p.y += p.vy*dt;
+
+    p.vx *= .96;
+    p.vy *= .96;
+
+    p.life -= dt;
+
+    if(p.life <= 0){
+
+      particles.splice(i,1);
+
+    }
+
+  }
+
+
+  for(let i=texts.length-1;i>=0;i--){
+
+    const t = texts[i];
+
+    t.y -= 30*dt;
+    t.life -= dt;
+
+    if(t.life <= 0){
+
+      texts.splice(i,1);
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   UPDATE GERAL
+========================================================= */
+
+function update(dt){
+
+  game.time += dt;
+
+  updatePlayer(dt);
+
+  updateBoss(dt);
+
+  updateBullets(dt);
+
+  updateEnemyBullets(dt);
+
+  updateParticles(dt);
+
+  game.shake =
+    Math.max(0,game.shake-dt*25);
+
+
+  if(messageTimer > 0){
+
+    messageTimer -= dt;
+
+    if(messageTimer <= 0){
+
+      document.getElementById("message")
+        .style.opacity = "0";
+
+    }
+
+  }
+
+
+  updateBossHud();
+  updateHud();
+
+}
+
+
+/* =========================================================
+   HUD
+========================================================= */
+
+function updateHud(){
+
+  document.getElementById("scoreValue")
+    .textContent =
+    game.score.toLocaleString("pt-BR");
+
+  document.getElementById("waveValue")
+    .textContent =
+    `${Math.min(game.bossIndex+1,3)} / 3`;
+
+
+  if(player){
+
+    document.getElementById("hpFill")
+      .style.transform =
+      `scaleX(${player.hp/player.maxHp})`;
+
+    document.getElementById("dashFill")
+      .style.transform =
+      `scaleX(${1-player.dashCooldown})`;
+
+  }
+
+}
+
+
+function updateBossHud(){
+
+  const name =
+    document.getElementById("bossName");
+
+  const fill =
+    document.getElementById("bossFill");
+
+
+  if(!boss){
+
+    name.textContent = "---";
+    fill.style.transform = "scaleX(0)";
+    return;
+
+  }
+
+
+  name.textContent = boss.name;
+  name.style.color = boss.color;
+
+  fill.style.transform =
+    `scaleX(${Math.max(0,boss.hp/boss.maxHp)})`;
+
+  fill.style.background =
+    `linear-gradient(90deg,${boss.color},#ff3b6b)`;
+
+}
+
+
+/* =========================================================
+   FUNDO
+========================================================= */
+
+function drawBackground(){
+
+  ctx.fillStyle = "#030612";
+  ctx.fillRect(0,0,W,H);
+
+
+  const gradient =
+    ctx.createRadialGradient(
+      W/2,H/2,10,
+      W/2,H/2,Math.max(W,H)*.7
+    );
+
+  gradient.addColorStop(
+    0,
+    "rgba(30,50,120,.25)"
+  );
+
+  gradient.addColorStop(
+    1,
+    "rgba(0,0,0,.8)"
+  );
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0,0,W,H);
+
+
+  /* estrelas */
+
+  for(let i=0;i<100;i++){
+
+    const x =
+      (i*137 + game.time*(i%3+1)*5)
+      % W;
+
+    const y =
+      (i*71) % H;
+
+    const size =
+      .5+(i%3)*.5;
+
+    ctx.fillStyle =
+      i%8===0
+      ? "#36e0ff"
+      : "#ffffff";
+
+    ctx.globalAlpha =
+      .2+(i%5)*.1;
+
+    ctx.fillRect(
+      x,
+      y,
+      size,
+      size
+    );
+
+  }
+
+  ctx.globalAlpha=1;
+
+
+  /* grid */
+
+  const grid=70;
+
+  ctx.strokeStyle =
+    "rgba(54,224,255,.08)";
+
+  ctx.lineWidth=1;
+
+  ctx.beginPath();
+
+  for(
+    let x=0;
+    x<W;
+    x+=grid
+  ){
+
+    ctx.moveTo(x,0);
+    ctx.lineTo(x,H);
+
+  }
+
+  for(
+    let y=0;
+    y<H;
+    y+=grid
+  ){
+
+    ctx.moveTo(0,y);
+    ctx.lineTo(W,y);
+
+  }
+
+  ctx.stroke();
+
+}
+
+
+/* =========================================================
+   DESENHAR CHEFÃO
+========================================================= */
+
+function drawBoss(){
+
+  if(!boss) return;
+
+  ctx.save();
+
+  ctx.translate(boss.x,boss.y);
+
+  ctx.rotate(game.time*.5);
+
+  ctx.shadowColor=boss.color;
+  ctx.shadowBlur=35;
+
+  ctx.strokeStyle=boss.hitFlash>0
+    ? "#ffffff"
+    : boss.color;
+
+  ctx.fillStyle =
+    boss.hitFlash>0
+    ? "#ffffff"
+    : boss.color;
+
+  ctx.lineWidth=4;
+
+
+  /* corpo */
+
+  ctx.beginPath();
+
+  const points =
+    8 + game.bossIndex*2;
+
+  for(let i=0;i<points;i++){
+
+    const angle =
+      i/points*TAU;
+
+    const radius =
+      i%2===0
+      ? boss.radius
+      : boss.radius*.65;
+
+    const x =
+      Math.cos(angle)*radius;
+
+    const y =
+      Math.sin(angle)*radius;
+
+    if(i===0)
+      ctx.moveTo(x,y);
+    else
+      ctx.lineTo(x,y);
+
+  }
+
+  ctx.closePath();
+
+  ctx.globalAlpha=.2;
+  ctx.fill();
+
+  ctx.globalAlpha=1;
+  ctx.stroke();
+
+
+  /* núcleo */
+
+  ctx.beginPath();
+
+  ctx.fillStyle="#ffffff";
+
+  ctx.arc(
+    0,
+    0,
+    boss.radius*.25,
+    0,
+    TAU
+  );
+
+  ctx.fill();
+
+
+  ctx.restore();
+
+}
+
+
+/* =========================================================
+   DESENHAR JOGADOR
+========================================================= */
+
+function drawPlayer(){
+
+  if(!player) return;
+
+  if(
+    player.invulnerable>0 &&
+    Math.floor(player.invulnerable*20)%2===0
+  ){
+
+    return;
+
+  }
+
+
+  ctx.save();
+
+  ctx.translate(
+    player.x,
+    player.y
+  );
+
+  ctx.rotate(player.angle);
+
+  ctx.shadowColor="#36e0ff";
+  ctx.shadowBlur=25;
+
+  ctx.fillStyle="#36e0ff";
+
+  ctx.beginPath();
+
+  ctx.moveTo(20,0);
+  ctx.lineTo(-13,-11);
+  ctx.lineTo(-5,0);
+  ctx.lineTo(-13,11);
+
+  ctx.closePath();
+
+  ctx.fill();
+
+
+  ctx.fillStyle="#ffffff";
+
+  ctx.beginPath();
+
+  ctx.arc(
+    3,
+    0,
+    4,
+    0,
+    TAU
+  );
+
+  ctx.fill();
+
+
+  ctx.restore();
+
+
+  /* escudo visual durante dash */
+
+  if(player.dashTimer>0){
+
+    ctx.strokeStyle="#36e0ff";
+    ctx.lineWidth=3;
+    ctx.shadowColor="#36e0ff";
+    ctx.shadowBlur=20;
+
+    ctx.beginPath();
+
+    ctx.arc(
+      player.x,
+      player.y,
+      28,
+      0,
+      TAU
+    );
+
+    ctx.stroke();
+
+  }
+
+}
+
+
+/* =========================================================
+   RENDER
+========================================================= */
+
+function render(){
+
+  drawBackground();
+
+
+  ctx.save();
+
+
+  if(game.shake>0){
+
+    ctx.translate(
+      rand(-game.shake,game.shake),
+      rand(-game.shake,game.shake)
+    );
+
+  }
+
+
+  drawBoss();
+
+
+  /* tiros jogador */
+
+  ctx.shadowColor="#36e0ff";
+  ctx.shadowBlur=15;
+  ctx.fillStyle="#bff7ff";
+
+  for(const b of bullets){
+
+    ctx.beginPath();
+
+    ctx.arc(
+      b.x,
+      b.y,
+      b.radius,
+      0,
+      TAU
+    );
+
+    ctx.fill();
+
+  }
+
+
+  /* tiros inimigos */
+
+  for(const b of enemyBullets){
+
+    ctx.shadowColor=b.color;
+    ctx.shadowBlur=18;
+
+    ctx.fillStyle=b.color;
+
+    ctx.beginPath();
+
+    ctx.arc(
+      b.x,
+      b.y,
+      b.radius,
+      0,
+      TAU
+    );
+
+    ctx.fill();
+
+  }
+
+
+  /* partículas */
+
+  ctx.shadowBlur=0;
+
+  for(const p of particles){
+
+    ctx.globalAlpha =
+      Math.max(0,p.life/p.maxLife);
+
+    ctx.fillStyle=p.color;
+
+    ctx.beginPath();
+
+    ctx.arc(
+      p.x,
+      p.y,
+      p.radius,
+      0,
+      TAU
+    );
+
+    ctx.fill();
+
+  }
+
+  ctx.globalAlpha=1;
+
+
+  drawPlayer();
+
+
+  /* textos */
+
+  ctx.textAlign="center";
+  ctx.font="bold 17px monospace";
+
+  for(const t of texts){
+
+    ctx.globalAlpha =
+      Math.max(0,t.life);
+
+    ctx.fillStyle=t.color;
+
+    ctx.fillText(
+      t.text,
+      t.x,
+      t.y
+    );
+
+  }
+
+  ctx.globalAlpha=1;
+
+  ctx.restore();
+
+
+  /* toque */
+
+  if(touch.active){
+
+    ctx.strokeStyle="rgba(54,224,255,.35)";
+    ctx.lineWidth=2;
+
+    ctx.beginPath();
+
+    ctx.arc(
+      touch.startX,
+      touch.startY,
+      35,
+      0,
+      TAU
+    );
+
+    ctx.stroke();
+
+
+    ctx.fillStyle="rgba(54,224,255,.25)";
+
+    ctx.beginPath();
+
+    ctx.arc(
+      touch.x,
+      touch.y,
+      15,
+      0,
+      TAU
+    );
+
+    ctx.fill();
+
+  }
+
+
+  /* pausa */
+
+  if(game.paused){
+
+    ctx.fillStyle="rgba(0,0,0,.65)";
+    ctx.fillRect(0,0,W,H);
+
+    ctx.textAlign="center";
+
+    ctx.fillStyle="#ffffff";
+
+    ctx.font="bold 30px monospace";
+
+    ctx.fillText(
+      "PAUSADO",
+      W/2,
+      H/2
+    );
+
+    ctx.font="13px monospace";
+
+    ctx.globalAlpha=.6;
+
+    ctx.fillText(
+      "PRESSIONE P PARA CONTINUAR",
+      W/2,
+      H/2+30
+    );
+
+    ctx.globalAlpha=1;
+
+  }
+
+}
+
+
+/* =========================================================
+   GAME OVER
+========================================================= */
+
+function gameOver(){
+
+  game.state="gameover";
+
+  explosion(
+    player.x,
+    player.y,
+    "#ff3b6b",
+    100,
+    600
+  );
+
+  game.shake=25;
+
+  setTimeout(()=>{
+
+    showEndScreen(false);
+
+  },700);
+
+}
+
+
+/* =========================================================
+   VITÓRIA
+========================================================= */
+
+function victory(){
+
+  game.state="victory";
+
+  showEndScreen(true);
+
+}
+
+
+/* =========================================================
+   TELA FINAL
+========================================================= */
+
+function showEndScreen(won){
+
+  const screen =
+    document.getElementById("screen");
+
+  const panel =
+    document.getElementById("panel");
+
+
+  screen.classList.remove("hidden");
+
+
+  if(won){
+
+    panel.innerHTML = `
+
+      <h1>VITÓRIA<br>
+      <span>TOTAL!</span></h1>
+
+      <div class="subtitle">
+        TODOS OS CHEFÕES FORAM DERROTADOS
+      </div>
+
+      <div class="result">
+        Pontuação final
+        <strong>${game.score.toLocaleString("pt-BR")}</strong>
+      </div>
+
+      <button id="restart">
+        JOGAR NOVAMENTE
+      </button>
+
+    `;
+
+  }else{
+
+    panel.innerHTML = `
+
+      <h1>FIM DE<br>
+      <span>JOGO</span></h1>
+
+      <div class="subtitle">
+        SUA NAVE FOI DESTRUÍDA
+      </div>
+
+      <div class="result">
+        Pontuação
+        <strong>${game.score.toLocaleString("pt-BR")}</strong>
+      </div>
+
+      <button id="restart">
+        TENTAR NOVAMENTE
+      </button>
+
+    `;
+
+  }
+
+
+  document
+    .getElementById("restart")
+    .onclick=startGame;
+
+}
+
+
+/* =========================================================
+   INICIAR
+========================================================= */
+
+function startGame(){
+
+  enableAudio();
+
+  resetGame();
+
+  game.state="playing";
+
+  document
+    .getElementById("screen")
+    .classList.add("hidden");
+
+}
+
+
+/* =========================================================
+   BOTÃO
+========================================================= */
+
+document
+  .getElementById("startButton")
+  .onclick=startGame;
+
+
+/* =========================================================
+   LOOP PRINCIPAL
+========================================================= */
+
+let lastTime=performance.now();
+
+function loop(now){
+
+  let dt =
+    (now-lastTime)/1000;
+
+  lastTime=now;
+
+  dt=Math.min(dt,1/30);
+
+
+  if(
+    game.state==="playing" &&
+    !game.paused
+  ){
+
+    update(dt);
+
+  }
+
+
+  render();
+
+  requestAnimationFrame(loop);
+
+}
+
+
+resetGame();
+
+requestAnimationFrame(loop);
+
+</script>
+
+</body>
+</html>
